@@ -2,8 +2,8 @@
 <html lang="ku" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>سیستەمی وێستگە</title>
-     <link rel="icon" type="image/png" href="https://arduexcel.github.io/img/arduecel.ico">
+    <title>سیستەمی وێستگە - وەشانی پارێزراو</title>
+    <link rel="icon" type="image/png" href="https://arduexcel.github.io/img/arduecel.ico">
     
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
@@ -12,7 +12,7 @@
         :root { --primary: #3498db; --success: #27ae60; --danger: #e74c3c; --dark: #2c3e50; --warning: #f39c12; --parking: #9b59b6; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f4f7f6; margin: 0; padding: 0; direction: rtl; }
         #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #2c3e50; display: flex; justify-content: center; align-items: center; z-index: 9999; }
-        .login-box { background: white; padding: 40px; border-radius: 15px; width: 320px; text-align: center; }
+        .login-box { background: white; padding: 40px; border-radius: 15px; width: 320px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.3); }
         .container { max-width: 550px; margin: 10px auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
         .stats-bar { display: flex; gap: 10px; margin-bottom: 20px; }
         .stat-card { flex: 1; background: #ebf5fb; padding: 12px; border-radius: 8px; text-align: center; border: 1px solid #d4e6f1; }
@@ -26,7 +26,6 @@
         input, select { width: 100%; padding: 12px; border: 2px solid #eee; border-radius: 8px; font-size: 18px; outline: none; box-sizing: border-box; margin-bottom: 10px; }
         .btn-save { width: 100%; padding: 15px; background: var(--success); color: white; font-size: 19px; }
         
-        /* شێوازی لیستی هەڵبژاردنی هێڵ */
         #carMatchList { background: white; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 10px; display: none; max-height: 150px; overflow-y: auto; }
         .match-item { padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; display: flex; justify-content: space-between; }
         .match-item:hover { background: #f0f0f0; }
@@ -50,8 +49,9 @@
 <div id="login-overlay">
     <div class="login-box">
         <img src="https://arduexcel.github.io/img/ms-icon-144x144.png" width="70">
-        <h3>چوونەژوورەوە</h3>
+        <h3>چوونەژوورەوەی کارمەند</h3>
         <select id="userSelect"><option>بار دەبێت...</option></select>
+        <input type="password" id="userPass" placeholder="وشەی تێپەڕ (Password)">
         <button onclick="login()" style="width:100%; padding:12px; background:var(--primary); color:white; margin-top:10px;">داخلبوون</button>
     </div>
 </div>
@@ -60,15 +60,15 @@
     <div class="top-bar">
         <button class="btn-logout" onclick="logout()">دەرچوون</button>
         <button id="parkingModeBtn" class="btn-parking" onclick="toggleParkingMode()">🅿️ پارکینگ</button>
-        <button style="background:var(--dark); color:white; padding:8px 15px;" onclick="openMyReport()">ڕاپۆرت</button>
+        <button style="background:var(--dark); color:white; padding:8px 15px;" onclick="openMyReport()">ڕاپۆرتی من</button>
     </div>
 
     <div class="stats-bar">
-        <div class="stat-card"><h4>وەسڵ (ئەمڕۆ)</h4><p id="totalCount">0</p></div>
-        <div class="stat-card"><h4>پارە (ئەمڕۆ)</h4><p id="totalMoney">0</p></div>
+        <div class="stat-card"><h4>وەسڵەکانت</h4><p id="totalCount">0</p></div>
+        <div class="stat-card"><h4>کۆی پارەکەت</h4><p id="totalMoney">0</p></div>
     </div>
 
-    <input type="text" id="carNumberInput" oninput="searchCarLocally(this.value)" onkeypress="handleEnter(event)" placeholder="ژمارەی ئۆتۆمبێل..." autofocus>
+    <input type="text" id="carNumberInput" oninput="searchCarLocally(this.value)" placeholder="ژمارەی ئۆتۆمبێل..." autofocus>
     
     <div id="carMatchList"></div>
 
@@ -95,11 +95,11 @@
 <div id="report-modal">
     <div class="modal-content">
         <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-            <h3>ڕاپۆرتی کارەکانی ئەمڕۆ</h3>
+            <h3 id="reportTitle">ڕاپۆرتی من</h3>
             <button onclick="closeReport()" style="background:red; color:white; padding:5px 15px;">X</button>
         </div>
         <table>
-            <thead><tr><th>ژ.وەسڵ</th><th>کات</th><th>ژمارە</th><th>هێڵ</th><th>نرخ</th><th>تێبینی</th><th>کردار</th></tr></thead>
+            <thead><tr><th>کات</th><th>ژمارە</th><th>هێڵ</th><th>نرخ</th><th>تێبینی</th><th>کردار</th></tr></thead>
             <tbody id="report-body"></tbody>
         </table>
     </div>
@@ -132,26 +132,52 @@
     const today = new Date().toLocaleDateString('en-CA');
 
     window.onload = async () => {
-        const empSnap = await db1.collection("Employees").where("role", "==", "staff").get();
+        // لۆدکردنی ناوی کارمەندەکان
+        const empSnap = await db1.collection("Employees").get();
         const select = document.getElementById('userSelect');
         select.innerHTML = '<option value="">ناو هەڵبژێرە...</option>';
-        empSnap.forEach(doc => { select.innerHTML += `<option value="${doc.data().name}">${doc.data().name}</option>`; });
+        empSnap.forEach(doc => { 
+            if(doc.data().role === 'staff' || doc.data().name === 'admin') {
+                select.innerHTML += `<option value="${doc.data().name}">${doc.data().name}</option>`; 
+            }
+        });
 
         const carSnap = await db1.collection("Cars").get();
         allCars = carSnap.docs.map(doc => doc.data());
 
         if(currentUser) {
-            document.getElementById('login-overlay').style.display = 'none';
-            document.getElementById('main-content').style.display = 'block';
-            updateStats();
+            showMainApp();
         }
     };
 
-    function login() {
+    async function login() {
         const name = document.getElementById('userSelect').value;
-        if(!name) return alert("ناو هەڵبژێرە");
+        const pass = document.getElementById('userPass').value;
+        
+        if(!name || !pass) return alert("ناو و پاسۆرد بنووسە");
+
+        // پشکنینی Master Admin
+        if(name === "admin" && pass === "0055") {
+            successLogin("admin");
+            return;
+        }
+
+        // پشکنینی کارمەند لە داتابەیس
+        const snap = await db1.collection("Employees").where("name", "==", name).where("password", "==", pass).get();
+        if(!snap.empty) {
+            successLogin(name);
+        } else {
+            alert("پاسۆردەکە هەڵەیە!");
+        }
+    }
+
+    function successLogin(name) {
         currentUser = name;
         localStorage.setItem("terminalUser", name);
+        showMainApp();
+    }
+
+    function showMainApp() {
         document.getElementById('login-overlay').style.display = 'none';
         document.getElementById('main-content').style.display = 'block';
         updateStats();
@@ -160,22 +186,18 @@
     function logout() {
         localStorage.removeItem("terminalUser");
         currentUser = "";
-        document.getElementById('main-content').style.display = 'none';
-        document.getElementById('login-overlay').style.display = 'flex';
+        location.reload();
     }
 
+    // --- فەنکشنەکانی گەڕان و کار ---
     function searchCarLocally(num) {
         const listDiv = document.getElementById('carMatchList');
         listDiv.innerHTML = "";
         listDiv.style.display = "none";
-        
         if(isParking || !num) return;
-        
         const matches = allCars.filter(c => String(c.number) === String(num));
-        
-        if(matches.length === 1) {
-            setCarData(matches[0]);
-        } else if (matches.length > 1) {
+        if(matches.length === 1) { setCarData(matches[0]); } 
+        else if (matches.length > 1) {
             listDiv.style.display = "block";
             matches.forEach(m => {
                 const div = document.createElement('div');
@@ -207,6 +229,7 @@
             const subColRef = db1.collection("Invoices").doc(today).collection("AllInvoices");
             const snap = await subColRef.get();
             const invoiceNo = snap.size + 1;
+            const dateStr = new Date().toLocaleDateString('en-GB') + " " + new Date().toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'});
 
             const data = {
                 invoiceNo: invoiceNo,
@@ -215,30 +238,25 @@
                 line: document.getElementById('resLine').value || "پارکینگ",
                 type: document.getElementById('resType').value || "پارکینگ",
                 note: note,
-                phone: document.getElementById('resPhone').value || "",
                 employee: currentUser,
                 status: "active",
-                date: new Date().toLocaleString('ku-IQ'),
+                date: dateStr,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             };
 
-            // پڕکردنەوەی بەشی پرینت
+            // پڕکردنەوەی پرینت
             document.getElementById('p-inv-no').innerText = "وەسڵی ژمارە: " + invoiceNo;
             document.getElementById('p-num').innerText = num;
             document.getElementById('p-line').innerText = data.line;
             document.getElementById('p-price').innerText = price + " دینار";
             document.getElementById('p-user').innerText = "کارمەند: " + currentUser;
-            document.getElementById('p-date').innerText = data.date;
-            
+            document.getElementById('p-date').innerText = dateStr;
             const pNote = document.getElementById('p-note-txt');
-            if(note) { pNote.innerText = "تێبینی: " + note; pNote.style.display = "block"; } 
-            else { pNote.style.display = "none"; }
+            if(note) { pNote.innerText = "تێبینی: " + note; pNote.style.display = "block"; } else { pNote.style.display = "none"; }
 
-            // ئەنجامدانی پرینت
             window.print();
 
-            // پرسیار لەوەی پرینت کرا یان نا؟
-            if(confirm("ئایا وەسڵەکە چاپ کرا؟ ئەگەر چاپ نەکرابێت خەزن نابێت.")) {
+            if(confirm("ئایا چاپ کرا؟")) {
                 const newId = subColRef.doc().id;
                 await Promise.all([
                     db1.collection("Invoices").doc(today).collection("AllInvoices").doc(newId).set(data),
@@ -246,65 +264,30 @@
                 ]);
                 resetUI();
             }
-
         } catch (e) { alert("هەڵە: " + e.message); }
         finally { btn.disabled = false; }
     }
 
-    async function cancelInv(id) {
-        const reason = prompt("هۆکاری سڕینەوە:");
-        if(!reason) return;
-        try {
-            await db2.collection("Invoices").doc(today).collection("AllInvoices").doc(id).delete();
-            await db1.collection("Invoices").doc(today).collection("AllInvoices").doc(id).update({
-                status: "canceled",
-                deleteReason: reason
-            });
-            alert("سڕایەوە");
-            openMyReport();
-            updateStats();
-        } catch (e) { alert("هەڵە: " + e.message); }
-    }
-
-    function resetUI() {
-        document.getElementById('carNumberInput').value = "";
-        document.getElementById('resPrice').value = "";
-        document.getElementById('resNote').value = "";
-        document.getElementById('resPhone').value = "";
-        document.getElementById('resType').value = isParking ? "پارکینگ" : "";
-        document.getElementById('resLine').value = isParking ? "پارکینگ" : "";
-        document.getElementById('btnHalf').style.display = "none";
-        document.getElementById('carMatchList').style.display = "none";
-        updateStats();
-        document.getElementById('carNumberInput').focus();
-    }
-
-    async function updateStats() {
-        try {
-            const snap = await db1.collection("Invoices").doc(today).collection("AllInvoices").where("status", "==", "active").get();
-            let totalM = 0, totalC = 0;
-            snap.forEach(doc => { totalM += parseInt(doc.data().price || 0); totalC++; });
-            document.getElementById('totalCount').innerText = totalC;
-            document.getElementById('totalMoney').innerText = totalM.toLocaleString() + " د.ع";
-        } catch(e) {}
-    }
-
-    function makeHalfPrice() {
-        let pInput = document.getElementById('resPrice');
-        pInput.value = (pInput.value == 6500) ? 3000 : Math.floor(parseInt(pInput.value) / 2);
-        document.getElementById('btnHalf').style.display = "none";
-    }
-
+    // --- پاراستنی ڕاپۆرت: تەنها وەسڵی خۆی دەبینێت ---
     async function openMyReport() {
-        const snap = await db1.collection("Invoices").doc(today).collection("AllInvoices").orderBy("timestamp", "desc").get();
         const tbody = document.getElementById('report-body');
+        tbody.innerHTML = "بار دەبێت...";
+        document.getElementById('report-modal').style.display = 'flex';
+        document.getElementById('reportTitle').innerText = "ڕاپۆرتی کارمەند: " + currentUser;
+
+        // فلتەرکردنی داتاکان بەپێی ناوی کارمەندی داخلبوو
+        const snap = await db1.collection("Invoices").doc(today).collection("AllInvoices")
+                            .where("employee", "==", currentUser)
+                            .orderBy("timestamp", "desc").get();
+        
         tbody.innerHTML = "";
+        if(snap.empty) { tbody.innerHTML = "هیچ وەسڵێک نییە"; return; }
+
         snap.forEach(doc => {
             const d = doc.data();
             const isCanceled = d.status === "canceled";
             tbody.innerHTML += `<tr class="${isCanceled ? 'canceled-row' : ''}">
-                <td>${d.invoiceNo || '-'}</td>
-                <td>${d.date.split(',')[1] || d.date}</td>
+                <td>${d.date}</td>
                 <td>${d.carNumber}</td>
                 <td>${d.line}</td>
                 <td>${d.price}</td>
@@ -312,9 +295,22 @@
                 <td>${isCanceled ? 'سڕاوە' : `<button onclick="cancelInv('${doc.id}')" style="background:red; color:white; padding:3px 7px;">سڕینەوە</button>`}</td>
             </tr>`;
         });
-        document.getElementById('report-modal').style.display = 'flex';
     }
 
+    async function updateStats() {
+        try {
+            // ئاماری تەنها ئەم کارمەندە
+            const snap = await db1.collection("Invoices").doc(today).collection("AllInvoices")
+                                .where("employee", "==", currentUser)
+                                .where("status", "==", "active").get();
+            let totalM = 0, totalC = 0;
+            snap.forEach(doc => { totalM += parseInt(doc.data().price || 0); totalC++; });
+            document.getElementById('totalCount').innerText = totalC;
+            document.getElementById('totalMoney').innerText = totalM.toLocaleString() + " د.ع";
+        } catch(e) {}
+    }
+
+    // --- بەشەکانی تر ---
     function toggleParkingMode() {
         isParking = !isParking;
         document.getElementById('parkingModeBtn').classList.toggle('parking-active');
@@ -324,8 +320,37 @@
         resetUI();
     }
 
+    function resetUI() {
+        document.getElementById('carNumberInput').value = "";
+        document.getElementById('resPrice').value = "";
+        document.getElementById('resNote').value = "";
+        document.getElementById('userPass').value = "";
+        document.getElementById('resType').value = isParking ? "پارکینگ" : "";
+        document.getElementById('resLine').value = isParking ? "پارکینگ" : "";
+        document.getElementById('btnHalf').style.display = "none";
+        document.getElementById('carMatchList').style.display = "none";
+        updateStats();
+        document.getElementById('carNumberInput').focus();
+    }
+
+    async function cancelInv(id) {
+        const reason = prompt("هۆکاری سڕینەوە:");
+        if(!reason) return;
+        await db1.collection("Invoices").doc(today).collection("AllInvoices").doc(id).update({
+            status: "canceled",
+            deleteReason: reason
+        });
+        await db2.collection("Invoices").doc(today).collection("AllInvoices").doc(id).delete();
+        openMyReport();
+        updateStats();
+    }
+
+    function makeHalfPrice() {
+        let pInput = document.getElementById('resPrice');
+        pInput.value = (pInput.value == 6500) ? 3000 : Math.floor(parseInt(pInput.value) / 2);
+        document.getElementById('btnHalf').style.display = "none";
+    }
     function closeReport() { document.getElementById('report-modal').style.display = 'none'; }
-    function handleEnter(e) { if(e.key === "Enter") handleAction(); }
 </script>
 </body>
 </html>
