@@ -268,35 +268,43 @@
         finally { btn.disabled = false; }
     }
 
-    // --- پاراستنی ڕاپۆرت: تەنها وەسڵی خۆی دەبینێت ---
     async function openMyReport() {
-        const tbody = document.getElementById('report-body');
-        tbody.innerHTML = "بار دەبێت...";
-        document.getElementById('report-modal').style.display = 'flex';
-        document.getElementById('reportTitle').innerText = "ڕاپۆرتی کارمەند: " + currentUser;
+    const tbody = document.getElementById('report-body');
+    tbody.innerHTML = "بار دەبێت...";
+    document.getElementById('report-modal').style.display = 'flex';
+    document.getElementById('reportTitle').innerText = "ڕاپۆرتی کارمەند: " + currentUser;
 
-        // فلتەرکردنی داتاکان بەپێی ناوی کارمەندی داخلبوو
+    try {
+        // لێرەدا orderBy لابراوە بۆ ئەوەی پێویستی بە دروستکردنی Index نەبێت لە فایەربەیس
         const snap = await db1.collection("Invoices").doc(today).collection("AllInvoices")
-                            .where("employee", "==", currentUser)
-                            .orderBy("timestamp", "desc").get();
+                            .where("employee", "==", currentUser).get();
         
         tbody.innerHTML = "";
-        if(snap.empty) { tbody.innerHTML = "هیچ وەسڵێک نییە"; return; }
+        if(snap.empty) { 
+            tbody.innerHTML = "<tr><td colspan='6'>هیچ وەسڵێک نییە</td></tr>"; 
+            return; 
+        }
 
-        snap.forEach(doc => {
-            const d = doc.data();
+        // داتاکان لێرەدا ڕیز دەکەین بەپێی کات (نوێترین لە سەرەوە)
+        let docs = [];
+        snap.forEach(doc => docs.push({id: doc.id, ...doc.data()}));
+        docs.sort((a, b) => b.timestamp - a.timestamp);
+
+        docs.forEach(d => {
             const isCanceled = d.status === "canceled";
             tbody.innerHTML += `<tr class="${isCanceled ? 'canceled-row' : ''}">
                 <td>${d.date}</td>
                 <td>${d.carNumber}</td>
                 <td>${d.line}</td>
-                <td>${d.price}</td>
+                <td>${parseInt(d.price).toLocaleString()}</td>
                 <td>${d.note || '-'}</td>
-                <td>${isCanceled ? 'سڕاوە' : `<button onclick="cancelInv('${doc.id}')" style="background:red; color:white; padding:3px 7px;">سڕینەوە</button>`}</td>
+                <td>${isCanceled ? 'سڕاوە' : `<button onclick="cancelInv('${d.id}')" style="background:red; color:white; padding:3px 7px; border-radius:4px;">سڕینەوە</button>`}</td>
             </tr>`;
         });
+    } catch (e) {
+        tbody.innerHTML = "هەڵە لە هێنانی داتا: " + e.message;
     }
-
+}
     async function updateStats() {
         try {
             // ئاماری تەنها ئەم کارمەندە
