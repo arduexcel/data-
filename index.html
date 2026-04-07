@@ -277,14 +277,20 @@
         btn.disabled = true;
 
         try {
-            // گەڕان بۆ دۆزینەوەی گەورەترین ژمارەی وەسڵی ئەمڕۆ بۆ ئەوەی دووبارە نەبێتەوە
+            // باشترین ڕێگە بۆ دۆزینەوەی گەورەترین ژمارەی وەسڵ
             const subColRef = db1.collection("Invoices").doc(today).collection("AllInvoices");
-            const snap = await subColRef.orderBy("invoiceNo", "desc").limit(1).get();
+            const snap = await subColRef.get();
             
             let nextInvoiceNo = 1;
             if(!snap.empty) {
-                const lastNo = parseInt(snap.docs[0].data().invoiceNo);
-                nextInvoiceNo = isNaN(lastNo) ? 1 : lastNo + 1;
+                let maxNo = 0;
+                snap.forEach(doc => {
+                    let currentNo = parseInt(doc.data().invoiceNo);
+                    if(!isNaN(currentNo) && currentNo > maxNo) {
+                        maxNo = currentNo;
+                    }
+                });
+                nextInvoiceNo = maxNo + 1;
             }
 
             const dateNow = new Date();
@@ -293,7 +299,7 @@
             const data = {
                 invoiceNo: nextInvoiceNo,
                 carNumber: num,
-                price: price,
+                price: parseInt(price),
                 line: line,
                 type: type,
                 note: note,
@@ -304,7 +310,6 @@
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             };
 
-            // پڕینت
             document.getElementById('p-inv-no').innerText = "وەسڵی ژمارە: " + nextInvoiceNo;
             document.getElementById('p-num').innerText = num;
             document.getElementById('p-line-type').innerText = "هێڵی: " + line + " (" + type + ")";
