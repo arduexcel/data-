@@ -193,9 +193,7 @@
         const listDiv = document.getElementById('carMatchList');
         listDiv.innerHTML = "";
         listDiv.style.display = "none";
-        
         if(currentMode === 'parking' || !num) { clearCarFields(); return; }
-        
         const matches = allCars.filter(c => String(c.number) === String(num));
         if(matches.length === 1) { 
             setCarData(matches[0]); 
@@ -241,12 +239,10 @@
             document.getElementById('parkingModeBtn').classList.toggle('mode-active', mode === 'parking');
             document.getElementById('fineModeBtn').classList.toggle('mode-active', mode === 'fine');
         }
-
         const priceField = document.getElementById('resPrice');
         const lineField = document.getElementById('resLine');
         const typeField = document.getElementById('resType');
         const noteField = document.getElementById('resNote');
-
         if(currentMode === 'parking') {
             priceField.readOnly = false;
             lineField.value = "پارکینگ";
@@ -281,7 +277,7 @@
         btn.disabled = true;
 
         try {
-            // فەچکردنی ئاخیر وەسڵ بۆ دیاریکردنی ژمارەی داهاتوو
+            // گەڕان بۆ دۆزینەوەی گەورەترین ژمارەی وەسڵی ئەمڕۆ بۆ ئەوەی دووبارە نەبێتەوە
             const subColRef = db1.collection("Invoices").doc(today).collection("AllInvoices");
             const snap = await subColRef.orderBy("invoiceNo", "desc").limit(1).get();
             
@@ -339,7 +335,6 @@
         tbody.innerHTML = "بار دەبێت...";
         document.getElementById('report-modal').style.display = 'flex';
         const today = getTodayStr();
-        
         try {
             const snap = await db1.collection("Invoices").doc(today).collection("AllInvoices")
                                 .where("employee", "==", currentUser)
@@ -348,7 +343,6 @@
             let docs = [];
             snap.forEach(doc => docs.push({id: doc.id, ...doc.data()}));
             docs.sort((a, b) => b.invoiceNo - a.invoiceNo);
-            
             docs.forEach(d => {
                 const isCanceled = d.status === "canceled";
                 tbody.innerHTML += `<tr class="${isCanceled ? 'canceled-row' : ''}">
@@ -381,7 +375,6 @@
 
     function resetUI(clearAll) {
         document.getElementById('carNumberInput').value = "";
-        
         if(clearAll) {
             document.getElementById('resPrice').value = "";
             if(currentMode === 'normal') {
@@ -395,7 +388,6 @@
                 document.getElementById('resLine').value = "";
             }
         }
-        
         document.getElementById('btnHalf').style.display = "none";
         document.getElementById('carMatchList').style.display = "none";
         updateStats();
