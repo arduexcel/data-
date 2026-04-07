@@ -133,6 +133,7 @@
     let currentMode = 'normal'; 
     let currentUser = localStorage.getItem("terminalUser") || "";
     
+    // کاتژمێر 12ی شەو بەهۆی گۆڕانی بەروارەوە خۆی دەبێتەوە بە 1
     const getTodayStr = () => new Date().toLocaleDateString('en-CA');
 
     window.onload = async () => {
@@ -281,15 +282,18 @@
         btn.disabled = true;
 
         try {
+            // دۆزینەوەی ئاخیر ژمارەی وەسڵ لەناو داتابەیس بۆ ئەوەی دوای ئەو بێت
             const subColRef = db1.collection("Invoices").doc(today).collection("AllInvoices");
             const snap = await subColRef.orderBy("invoiceNo", "desc").limit(1).get();
             
             let nextInvoiceNo = 1;
             if(!snap.empty) {
-                nextInvoiceNo = (snap.docs[0].data().invoiceNo || 0) + 1;
+                const lastNo = parseInt(snap.docs[0].data().invoiceNo);
+                nextInvoiceNo = isNaN(lastNo) ? 1 : lastNo + 1;
             }
 
-            const dateStr = new Date().toLocaleDateString('en-GB') + " " + new Date().toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'});
+            const dateNow = new Date();
+            const dateStr = dateNow.toLocaleDateString('en-GB') + " " + dateNow.toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'});
 
             const data = {
                 invoiceNo: nextInvoiceNo,
