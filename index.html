@@ -2,7 +2,7 @@
 <html lang="ku" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>سیستەمی وێستگە - وەشانی نوێکراو</title>
+    <title>سیستەمی وێستگە - وەشانی خێرا</title>
     <link rel="icon" type="image/png" href="https://arduexcel.github.io/img/arduecel.ico">
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
@@ -63,20 +63,20 @@
         <div class="stat-card"><h4>وەسڵەکانت</h4><p id="totalCount">0</p></div>
         <div class="stat-card"><h4>کۆی پارەکەت</h4><p id="totalMoney">0</p></div>
     </div>
-    <input type="text" id="carNumberInput" oninput="searchCarLocally(this.value)" placeholder="ژمارەی ئۆتۆمبێل..." autofocus>
+    <input type="text" id="carNumberInput" oninput="searchCarLocally(this.value)" onkeydown="if(event.key==='Enter') handleAction()" placeholder="ژمارەی ئۆتۆمبێل..." autofocus>
     <div id="carMatchList"></div>
     <div id="input-fields">
-        <div style="display:flex; gap:10px;">
+        <div id="lineTypeWrapper" style="display:flex; gap:10px;">
             <input type="text" id="resLine" placeholder="هێڵ" readonly>
             <input type="text" id="resType" placeholder="جۆر" readonly>
         </div>
         <div style="display:flex; gap:5px;">
-            <input type="number" id="resPrice" readonly placeholder="نرخ">
+            <input type="number" id="resPrice" readonly placeholder="نرخ" onkeydown="if(event.key==='Enter') handleAction()">
             <button id="btnHalf" onclick="makeHalfPrice()" style="background:var(--warning); color:white; width:65px; height:50px; border-radius:8px; display:none;">½</button>
         </div>
-        <input type="text" id="resNote" placeholder="تێبینی وەسڵ">
+        <input type="text" id="resNote" placeholder="تێبینی وەسڵ" onkeydown="if(event.key==='Enter') handleAction()">
     </div>
-    <button class="btn-save" id="saveBtn" onclick="handleAction()">خەزن و پڕینت</button>
+    <button class="btn-save" id="saveBtn" onclick="handleAction()">خەزن و پڕینت (Enter)</button>
 </div>
 
 <div id="report-modal">
@@ -218,50 +218,102 @@
             document.getElementById('parkingModeBtn').classList.toggle('mode-active', mode === 'parking');
             document.getElementById('fineModeBtn').classList.toggle('mode-active', mode === 'fine');
         }
+        
         const priceField = document.getElementById('resPrice');
         const lineField = document.getElementById('resLine');
         const typeField = document.getElementById('resType');
-        if(currentMode === 'parking') { priceField.readOnly = false; lineField.value = "پارکینگ"; typeField.value = "پارکینگ"; }
-        else if(currentMode === 'fine') { priceField.readOnly = false; lineField.value = ""; typeField.value = ""; }
-        else { priceField.readOnly = true; lineField.value = ""; typeField.value = ""; }
+        const noteField = document.getElementById('resNote');
+        const lineTypeWrapper = document.getElementById('lineTypeWrapper');
+
+        if(currentMode === 'parking') { 
+            priceField.readOnly = false; 
+            lineField.value = "پارکینگ"; 
+            typeField.value = "پارکینگ";
+            noteField.value = "";
+            lineTypeWrapper.style.display = "none";
+        }
+        else if(currentMode === 'fine') { 
+            priceField.readOnly = false; 
+            lineField.value = "غەرامە"; 
+            typeField.value = "غەرامە"; 
+            noteField.value = "غەرامە"; // نوسینی غەرامە لە تێبینی
+            lineTypeWrapper.style.display = "flex";
+        }
+        else { 
+            priceField.readOnly = true; 
+            lineField.value = ""; 
+            typeField.value = ""; 
+            noteField.value = "";
+            lineTypeWrapper.style.display = "flex";
+        }
         resetUI();
     }
 
     async function handleAction() {
-        const num = document.getElementById('carNumberInput').value;
-        const price = document.getElementById('resPrice').value;
+        const numInput = document.getElementById('carNumberInput');
+        const priceInput = document.getElementById('resPrice');
+        const num = numInput.value;
+        const price = priceInput.value;
+        
         if(!num || !price) return;
+        
         const btn = document.getElementById('saveBtn');
         if(btn.disabled) return;
         btn.disabled = true;
+        
         try {
             const today = getTodayStr();
             const subColRef = db1.collection("Invoices").doc(today).collection("AllInvoices");
             const snap = await subColRef.orderBy("invoiceNo", "desc").limit(1).get();
             let nextInvoiceNo = 1;
             if(!snap.empty) { nextInvoiceNo = (snap.docs[0].data().invoiceNo || 0) + 1; }
+            
             const dateStr = new Date().toLocaleDateString('en-GB') + " " + new Date().toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'});
+            
+            let finalLine = document.getElementById('resLine').value || "ئاسایی";
+            // دڵنیابوونەوە کە لە مۆدی پارکینگ هێڵەکە دەبێت بە پارکینگ
+            if(currentMode === 'parking') finalLine = "پارکینگ";
+
             const data = {
                 invoiceNo: nextInvoiceNo, carNumber: num, price: price,
-                line: document.getElementById('resLine').value || "ئاسایی",
+                line: finalLine,
                 type: document.getElementById('resType').value || "ئاسایی",
-                note: document.getElementById('resNote').value + (currentMode === 'fine' ? " (غەرامە)" : ""),
+                note: document.getElementById('resNote').value,
                 employee: currentUser, status: "active", date: dateStr, mode: currentMode,
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             };
+            
             document.getElementById('p-inv-no').innerText = "وەسڵی ژمارە: " + nextInvoiceNo;
             document.getElementById('p-num').innerText = num;
             document.getElementById('p-line').innerText = data.line;
             document.getElementById('p-price').innerText = price + " دینار";
             document.getElementById('p-user').innerText = "کارمەند: " + currentUser;
             document.getElementById('p-date').innerText = dateStr;
-            if(data.note) { document.getElementById('p-note-txt').innerText = "تێبینی: " + data.note; document.getElementById('p-note-txt').style.display = "block"; } 
-            else { document.getElementById('p-note-txt').style.display = "none"; }
+            if(data.note) { 
+                document.getElementById('p-note-txt').innerText = "تێبینی: " + data.note; 
+                document.getElementById('p-note-txt').style.display = "block"; 
+            } else { 
+                document.getElementById('p-note-txt').style.display = "none"; 
+            }
+
             window.print();
+            
             const newId = subColRef.doc().id;
-            await Promise.all([ db1.collection("Invoices").doc(today).collection("AllInvoices").doc(newId).set(data), db2.collection("Invoices").doc(today).collection("AllInvoices").doc(newId).set(data) ]);
-            localTotalCount++; localTotalMoney += parseInt(price); updateStatsUI(); resetUI();
-        } catch (e) { alert("هەڵە: " + e.message); } finally { btn.disabled = false; }
+            await Promise.all([ 
+                db1.collection("Invoices").doc(today).collection("AllInvoices").doc(newId).set(data), 
+                db2.collection("Invoices").doc(today).collection("AllInvoices").doc(newId).set(data) 
+            ]);
+
+            localTotalCount++; 
+            localTotalMoney += parseInt(price); 
+            updateStatsUI(); 
+            resetUI();
+            
+        } catch (e) { 
+            alert("هەڵە: " + e.message); 
+        } finally { 
+            btn.disabled = false; 
+        }
     }
 
     async function openMyReport() {
@@ -296,8 +348,29 @@
         } catch(e) {}
     }
 
-    function updateStatsUI() { document.getElementById('totalCount').innerText = localTotalCount; document.getElementById('totalMoney').innerText = localTotalMoney.toLocaleString() + " د.ع"; }
-    function resetUI() { document.getElementById('carNumberInput').value = ""; document.getElementById('resPrice').value = ""; document.getElementById('resNote').value = ""; document.getElementById('carMatchList').style.display = "none"; setTimeout(() => { document.getElementById('carNumberInput').focus(); }, 150); }
+    function updateStatsUI() { 
+        document.getElementById('totalCount').innerText = localTotalCount; 
+        document.getElementById('totalMoney').innerText = localTotalMoney.toLocaleString() + " د.ع"; 
+    }
+    
+    function resetUI() { 
+        document.getElementById('carNumberInput').value = ""; 
+        document.getElementById('resPrice').value = ""; 
+        
+        if(currentMode === 'normal') {
+            document.getElementById('resType').value = "";
+            document.getElementById('resLine').value = "";
+            document.getElementById('resNote').value = "";
+        } else if (currentMode === 'parking') {
+            document.getElementById('resNote').value = "";
+        } else if (currentMode === 'fine') {
+            document.getElementById('resNote').value = "غەرامە";
+        }
+        
+        document.getElementById('carMatchList').style.display = "none"; 
+        setTimeout(() => { document.getElementById('carNumberInput').focus(); }, 100); 
+    }
+
     function closeReport() { document.getElementById('report-modal').style.display = 'none'; }
 
     async function cancelInv(id, price) {
@@ -309,6 +382,11 @@
             await db2.collection("Invoices").doc(today).collection("AllInvoices").doc(id).delete();
             localTotalCount--; localTotalMoney -= parseInt(price); updateStatsUI(); openMyReport();
         } catch (e) { alert("هەڵە لە سڕینەوە"); }
+    }
+    
+    function makeHalfPrice() {
+        let p = document.getElementById('resPrice').value;
+        if(p) document.getElementById('resPrice').value = Math.floor(p / 2);
     }
 </script>
 </body>
