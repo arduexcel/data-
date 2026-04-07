@@ -281,7 +281,7 @@
         btn.disabled = true;
 
         try {
-            // گەڕان بەدوای کۆتا ژمارەی وەسڵ بۆ ئەمڕۆ
+            // فەچکردنی ئاخیر وەسڵ بۆ دیاریکردنی ژمارەی داهاتوو
             const subColRef = db1.collection("Invoices").doc(today).collection("AllInvoices");
             const snap = await subColRef.orderBy("invoiceNo", "desc").limit(1).get();
             
@@ -291,8 +291,8 @@
                 nextInvoiceNo = isNaN(lastNo) ? 1 : lastNo + 1;
             }
 
-            const now = new Date();
-            const dateStr = now.toLocaleDateString('en-GB') + " " + now.toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'});
+            const dateNow = new Date();
+            const dateStr = dateNow.toLocaleDateString('en-GB') + " " + dateNow.toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'});
 
             const data = {
                 invoiceNo: nextInvoiceNo,
@@ -308,7 +308,7 @@
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             };
 
-            // نیشاندانی زانیاری بۆ پڕینت
+            // پڕینت
             document.getElementById('p-inv-no').innerText = "وەسڵی ژمارە: " + nextInvoiceNo;
             document.getElementById('p-num').innerText = num;
             document.getElementById('p-line-type').innerText = "هێڵی: " + line + " (" + type + ")";
@@ -411,10 +411,7 @@
                 status: "canceled", 
                 deleteReason: reason 
             });
-            await db2.collection("Invoices").doc(today).collection("AllInvoices").doc(id).update({ 
-                status: "canceled", 
-                deleteReason: reason 
-            });
+            await db2.collection("Invoices").doc(today).collection("AllInvoices").doc(id).delete();
             openMyReport();
             updateStats();
         } catch (e) { alert("هەڵە لە سڕینەوە"); }
