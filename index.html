@@ -277,21 +277,20 @@
         btn.disabled = true;
 
         try {
-            // باشترین ڕێگە بۆ دۆزینەوەی گەورەترین ژمارەی وەسڵ
+            // ڕێگای مسۆگەر بۆ دۆزینەوەی بەرزترین ژمارەی وەسڵ
             const subColRef = db1.collection("Invoices").doc(today).collection("AllInvoices");
             const snap = await subColRef.get();
             
-            let nextInvoiceNo = 1;
+            let maxNo = 0;
             if(!snap.empty) {
-                let maxNo = 0;
                 snap.forEach(doc => {
                     let currentNo = parseInt(doc.data().invoiceNo);
                     if(!isNaN(currentNo) && currentNo > maxNo) {
                         maxNo = currentNo;
                     }
                 });
-                nextInvoiceNo = maxNo + 1;
             }
+            let nextInvoiceNo = maxNo + 1;
 
             const dateNow = new Date();
             const dateStr = dateNow.toLocaleDateString('en-GB') + " " + dateNow.toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'});
@@ -310,6 +309,7 @@
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             };
 
+            // پڕینت کردنی وەسڵ پێش خەزنکردن بۆ خێرایی
             document.getElementById('p-inv-no').innerText = "وەسڵی ژمارە: " + nextInvoiceNo;
             document.getElementById('p-num').innerText = num;
             document.getElementById('p-line-type').innerText = "هێڵی: " + line + " (" + type + ")";
@@ -321,15 +321,16 @@
 
             window.print();
 
-            const newId = subColRef.doc().id;
+            // خەزنکردن لە هەردوو داتابەیس
+            const newDocRef = subColRef.doc();
             await Promise.all([
-                db1.collection("Invoices").doc(today).collection("AllInvoices").doc(newId).set(data),
-                db2.collection("Invoices").doc(today).collection("AllInvoices").doc(newId).set(data)
+                newDocRef.set(data),
+                db2.collection("Invoices").doc(today).collection("AllInvoices").doc(newDocRef.id).set(data)
             ]);
 
             resetUI(true);
         } catch (e) { 
-            alert("هەڵە: " + e.message); 
+            alert("هەڵە ڕوویدا: " + e.message); 
         } finally { 
             btn.disabled = false; 
         }
@@ -347,7 +348,8 @@
             tbody.innerHTML = "";
             let docs = [];
             snap.forEach(doc => docs.push({id: doc.id, ...doc.data()}));
-            docs.sort((a, b) => b.invoiceNo - a.invoiceNo);
+            // ڕیزکردنی وەسڵەکان بەپێی ژمارە (لە گەورەوە بۆ بچووک)
+            docs.sort((a, b) => (parseInt(b.invoiceNo) || 0) - (parseInt(a.invoiceNo) || 0));
             docs.forEach(d => {
                 const isCanceled = d.status === "canceled";
                 tbody.innerHTML += `<tr class="${isCanceled ? 'canceled-row' : ''}">
