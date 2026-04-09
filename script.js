@@ -90,6 +90,7 @@ async function showMainApp() {
     document.getElementById('displayEmployeeName').innerText = "بەکارهێنەر: " + currentUser;
     await loadDayCache();
     updateStatsDisplay();
+    document.getElementById('carNumberInput').focus();
 }
 
 function logout() {
@@ -297,7 +298,7 @@ function resetUI(clearAll) {
     }
     document.getElementById('btnHalf').style.display = "none";
     document.getElementById('carMatchList').style.display = "none";
-    setTimeout(() => { document.getElementById('carNumberInput').focus(); }, 150);
+    document.getElementById('carNumberInput').focus();
 }
 
 async function cancelInv(id, price) {
@@ -327,4 +328,16 @@ function makeHalfPrice() {
     document.getElementById('btnHalf').style.display = "none";
 }
 
-function closeReport() { document.getElementById('report-modal').style.display = 'none'; }
+function closeReport() {
+    document.getElementById('report-modal').style.display = 'none';
+    document.getElementById('carNumberInput').focus();
+}
+
+// Keep focus on car number input whenever the user clicks a non-interactive area
+document.addEventListener('click', function(e) {
+    const tag = e.target.tagName;
+    if (tag === 'INPUT' || tag === 'SELECT' || tag === 'BUTTON' || tag === 'TEXTAREA') return;
+    if (document.getElementById('report-modal').style.display === 'flex') return;
+    if (document.getElementById('login-overlay').style.display !== 'none') return;
+    document.getElementById('carNumberInput').focus();
+});
