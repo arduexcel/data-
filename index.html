@@ -64,6 +64,7 @@
             <h3 id="reportTitle">ڕاپۆرتی من</h3>
             <button onclick="closeReport()" style="background:red; color:white; padding:5px 15px;">X</button>
         </div>
+        <input type="text" id="reportSearchInput" oninput="filterReportByNumber(this.value)" placeholder="گەڕان بە ژمارە..." style="width:100%; padding:8px; margin-bottom:10px; border:1px solid #ccc; border-radius:6px; font-size:15px; direction:rtl; box-sizing:border-box;">
         <table>
             <thead><tr><th>ژ.وەسڵ</th><th>کات</th><th>ژمارە</th><th>هێڵ</th><th>جۆر</th><th>نرخ</th><th>تێبینی</th><th>کردار</th></tr></thead>
             <tbody id="report-body"></tbody>

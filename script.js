@@ -244,9 +244,19 @@ async function handleAction() {
     }
 }
 
+function filterReportByNumber(val) {
+    const rows = document.querySelectorAll('#report-body tr');
+    rows.forEach(row => {
+        const numCell = row.cells[2];
+        if (!numCell) return;
+        row.style.display = String(numCell.textContent).includes(val.trim()) ? '' : 'none';
+    });
+}
+
 async function openMyReport() {
     const tbody = document.getElementById('report-body');
     tbody.innerHTML = "بار دەبێت...";
+    document.getElementById('reportSearchInput').value = '';
     document.getElementById('report-modal').style.display = 'flex';
     const today = getTodayStr();
     try {
