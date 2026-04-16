@@ -9,17 +9,13 @@ const db2 = app2.firestore();
 let allCars = [];
 let currentMode = 'normal';
 let currentUser = localStorage.getItem("terminalUser") || "";
-
-// --- Local day-cache (avoids repeated Firestore reads) ---
 let localMaxInvoiceNo = 0;
 let localCount = 0;
 let localMoney = 0;
-let cacheDay = null;   // date string the cache belongs to
+let cacheDay = null;
 
 const getTodayStr = () => new Date().toLocaleDateString('en-CA');
 
-// Single query that loads both the global max invoice no AND this user's stats.
-// Only re-fetches when the calendar day changes.
 async function loadDayCache() {
     const today = getTodayStr();
     if (cacheDay === today) return;
@@ -183,17 +179,14 @@ async function handleAction() {
     const today = getTodayStr();
 
     if(!num || !price) return;
-
     const btn = document.getElementById('saveBtn');
     if(btn.disabled) return;
     btn.disabled = true;
 
     try {
-        // Ensure cache is loaded for today (no-op if already loaded)
         await loadDayCache();
         const subColRef = db1.collection("Invoices").doc(today).collection("AllInvoices");
         let nextInvoiceNo = localMaxInvoiceNo + 1;
-
         const dateNow = new Date();
         const dateStr = dateNow.toLocaleDateString('en-GB') + " " + dateNow.toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'});
 
@@ -211,7 +204,6 @@ async function handleAction() {
             timestamp: firebase.firestore.FieldValue.serverTimestamp()
         };
 
-        // پڕینت کردنی وەسڵ پێش خەزنکردن بۆ خێرایی
         document.getElementById('p-inv-no').innerText = "وەسڵی ژمارە: " + nextInvoiceNo;
         document.getElementById('p-num').innerText = num;
         document.getElementById('p-line-type').innerText = "هێڵی: " + line + " (" + type + ")";
@@ -223,25 +215,18 @@ async function handleAction() {
 
         window.print();
 
-        // خەزنکردن لە هەردوو داتابەیس
         const newDocRef = subColRef.doc();
         await Promise.all([
             newDocRef.set(data),
             db2.collection("Invoices").doc(today).collection("AllInvoices").doc(newDocRef.id).set(data)
         ]);
 
-        // Update local cache — no extra Firestore read needed
         localMaxInvoiceNo = nextInvoiceNo;
         localCount++;
         localMoney += parseInt(price);
         updateStatsDisplay();
-
         resetUI(true);
-    } catch (e) {
-        alert("هەڵە ڕوویدا: " + e.message);
-    } finally {
-        btn.disabled = false;
-    }
+    } catch (e) { alert("هەڵە: " + e.message); } finally { btn.disabled = false; }
 }
 
 function filterReportByNumber(val) {
@@ -260,35 +245,20 @@ async function openMyReport() {
     document.getElementById('report-modal').style.display = 'flex';
     const today = getTodayStr();
     try {
-        const snap = await db1.collection("Invoices").doc(today).collection("AllInvoices")
-                            .where("employee", "==", currentUser)
-                            .get();
+        const snap = await db1.collection("Invoices").doc(today).collection("AllInvoices").where("employee", "==", currentUser).get();
         let docs = [];
         snap.forEach(doc => docs.push({id: doc.id, ...doc.data()}));
-        // ڕیزکردنی وەسڵەکان بەپێی ژمارە (لە گەورەوە بۆ بچووک)
         docs.sort((a, b) => (parseInt(b.invoiceNo) || 0) - (parseInt(a.invoiceNo) || 0));
-        // Build all rows as one string — avoids repeated DOM re-parsing
         let rows = '';
         docs.forEach(d => {
             const isCanceled = d.status === "canceled";
             rows += `<tr class="${isCanceled ? 'canceled-row' : ''}">
-                <td>${d.invoiceNo}</td>
-                <td>${d.date}</td>
-                <td>${d.carNumber}</td>
-                <td>${d.line}</td>
-                <td>${d.type || '-'}</td>
-                <td>${parseInt(d.price).toLocaleString()}</td>
-                <td>${d.note || '-'}</td>
+                <td>${d.invoiceNo}</td><td>${d.date}</td><td>${d.carNumber}</td><td>${d.line}</td><td>${d.type || '-'}</td><td>${parseInt(d.price).toLocaleString()}</td><td>${d.note || '-'}</td>
                 <td>${isCanceled ? '-' : `<button onclick="cancelInv('${d.id}',${parseInt(d.price)})" style="background:red; color:white; padding:3px 7px; border-radius:4px;">سڕینەوە</button>`}</td>
             </tr>`;
         });
         tbody.innerHTML = rows;
     } catch (e) { tbody.innerHTML = "هەڵە لە بارکردن"; }
-}
-
-function updateStats() {
-    // Stats are kept in memory — no Firestore round-trip needed
-    updateStatsDisplay();
 }
 
 function resetUI(clearAll) {
@@ -316,12 +286,8 @@ async function cancelInv(id, price) {
     if(!reason) return;
     const today = getTodayStr();
     try {
-        await db1.collection("Invoices").doc(today).collection("AllInvoices").doc(id).update({
-            status: "canceled",
-            deleteReason: reason
-        });
+        await db1.collection("Invoices").doc(today).collection("AllInvoices").doc(id).update({status: "canceled", deleteReason: reason});
         await db2.collection("Invoices").doc(today).collection("AllInvoices").doc(id).delete();
-        // Update local cache — no extra Firestore read needed
         localCount--;
         localMoney -= price;
         updateStatsDisplay();
@@ -338,12 +304,60 @@ function makeHalfPrice() {
     document.getElementById('btnHalf').style.display = "none";
 }
 
-function closeReport() {
-    document.getElementById('report-modal').style.display = 'none';
-    document.getElementById('carNumberInput').focus();
+function closeReport() { document.getElementById('report-modal').style.display = 'none'; document.getElementById('carNumberInput').focus(); }
+
+// فانکشنی نوێ بۆ دروستکردنی ڕاپۆرتی کۆتایی بەپێی وێنەکە
+async function printShiftReport() {
+    const today = getTodayStr();
+    const btn = document.getElementById('shiftReportBtn');
+    btn.innerText = "باردەبێت...";
+    
+    try {
+        const snap = await db1.collection("Invoices").doc(today).collection("AllInvoices")
+                            .where("employee", "==", currentUser)
+                            .where("status", "==", "active")
+                            .get();
+
+        if (snap.empty) {
+            alert("هیچ وەسڵێکی چالاکت نییە");
+            btn.innerText = "ڕاپۆرتی کۆتایی";
+            return;
+        }
+
+        let minInv = Infinity;
+        let maxInv = -Infinity;
+        let totalP = 0;
+        let count = 0;
+
+        snap.forEach(doc => {
+            const d = doc.data();
+            const no = parseInt(d.invoiceNo);
+            if (!isNaN(no)) {
+                if (no < minInv) minInv = no;
+                if (no > maxInv) maxInv = no;
+            }
+            totalP += parseInt(d.price || 0);
+            count++;
+        });
+
+        const dateNow = new Date();
+        const dateStr = dateNow.toLocaleTimeString('en-GB', {hour: '2-digit', minute:'2-digit'}) + " " + dateNow.toLocaleDateString('en-GB');
+
+        document.getElementById('sr-user').innerText = currentUser;
+        document.getElementById('sr-date').innerText = dateStr;
+        document.getElementById('sr-range').innerHTML = `<b>لە وەسڵی:</b> ${minInv} <b>تا وەسڵی:</b> ${maxInv}`;
+        document.getElementById('sr-count').innerText = count;
+        document.getElementById('sr-total').innerText = totalP.toLocaleString() + " د.ع";
+
+        window.print();
+
+    } catch (e) {
+        alert("هەڵە: " + e.message);
+    } finally {
+        btn.innerText = "ڕاپۆرتی کۆتایی";
+    }
 }
 
-// Keep focus on car number input whenever the user clicks a non-interactive area
 document.addEventListener('click', function(e) {
     const tag = e.target.tagName;
     if (tag === 'INPUT' || tag === 'SELECT' || tag === 'BUTTON' || tag === 'TEXTAREA') return;
