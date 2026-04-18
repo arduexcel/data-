@@ -146,30 +146,71 @@ function toggleMode(mode) {
         currentMode = 'normal';
         document.getElementById('parkingModeBtn').classList.remove('mode-active');
         document.getElementById('fineModeBtn').classList.remove('mode-active');
+        document.getElementById('monthlyModeBtn').classList.remove('mode-active');
     } else {
         currentMode = mode;
         document.getElementById('parkingModeBtn').classList.toggle('mode-active', mode === 'parking');
         document.getElementById('fineModeBtn').classList.toggle('mode-active', mode === 'fine');
+        document.getElementById('monthlyModeBtn').classList.toggle('mode-active', mode === 'monthly');
     }
     const priceField = document.getElementById('resPrice');
     const lineField = document.getElementById('resLine');
+    const lineSelect = document.getElementById('resLineSelect');
     const typeField = document.getElementById('resType');
+    const typeSelect = document.getElementById('resTypeSelect');
     const noteField = document.getElementById('resNote');
+    const monthlyDates = document.getElementById('monthly-dates');
     if(currentMode === 'parking') {
         priceField.readOnly = false;
+        lineField.readOnly = true;
+        typeField.readOnly = true;
+        lineField.style.display = "";
+        lineSelect.style.display = "none";
+        typeField.style.display = "";
+        typeSelect.style.display = "none";
         lineField.value = "پارکینگ";
         typeField.value = "پارکینگ";
         noteField.value = "";
+        monthlyDates.style.display = "none";
     } else if(currentMode === 'fine') {
         priceField.readOnly = false;
+        lineField.readOnly = true;
+        typeField.readOnly = true;
+        lineField.style.display = "";
+        lineSelect.style.display = "none";
+        typeField.style.display = "";
+        typeSelect.style.display = "none";
         lineField.value = "";
         typeField.value = "غەرامە";
         noteField.value = "غەرامە";
+        monthlyDates.style.display = "none";
+    } else if(currentMode === 'monthly') {
+        priceField.readOnly = false;
+        lineField.style.display = "none";
+        lineSelect.style.display = "";
+        lineSelect.value = "";
+        typeField.style.display = "none";
+        typeSelect.style.display = "";
+        typeSelect.value = "";
+        noteField.value = "مانگانەی بۆ کراوە";
+        monthlyDates.style.display = "flex";
+        const today = new Date();
+        const nextMonth = new Date(today);
+        nextMonth.setMonth(nextMonth.getMonth() + 1);
+        document.getElementById('resFromDate').value = today.toLocaleDateString('en-CA');
+        document.getElementById('resToDate').value = nextMonth.toLocaleDateString('en-CA');
     } else {
         priceField.readOnly = true;
+        lineField.readOnly = true;
+        typeField.readOnly = true;
+        lineField.style.display = "";
+        lineSelect.style.display = "none";
+        typeField.style.display = "";
+        typeSelect.style.display = "none";
         lineField.value = "";
         typeField.value = "";
         noteField.value = "";
+        monthlyDates.style.display = "none";
     }
     resetUI(false);
 }
@@ -177,12 +218,24 @@ function toggleMode(mode) {
 async function handleAction() {
     const num = document.getElementById('carNumberInput').value;
     const price = document.getElementById('resPrice').value;
-    const line = document.getElementById('resLine').value;
-    const type = document.getElementById('resType').value;
+    const line = currentMode === 'monthly' ? document.getElementById('resLineSelect').value : document.getElementById('resLine').value;
+    const type = currentMode === 'monthly' ? document.getElementById('resTypeSelect').value : document.getElementById('resType').value;
     const note = document.getElementById('resNote').value;
     const today = getTodayStr();
 
     if(!num || !price) return;
+    if(currentMode === 'monthly' && !document.getElementById('resLineSelect').value) {
+        alert("تکایە هێڵ هەڵبژێرە");
+        return;
+    }
+    if(currentMode === 'monthly' && !document.getElementById('resTypeSelect').value) {
+        alert("تکایە جۆر هەڵبژێرە");
+        return;
+    }
+    if(currentMode === 'monthly' && (!document.getElementById('resFromDate').value || !document.getElementById('resToDate').value)) {
+        alert("تکایە بەروارەکان پڕبکەوە");
+        return;
+    }
 
     const btn = document.getElementById('saveBtn');
     if(btn.disabled) return;
@@ -210,6 +263,10 @@ async function handleAction() {
             mode: currentMode,
             timestamp: firebase.firestore.FieldValue.serverTimestamp()
         };
+        if(currentMode === 'monthly') {
+            data.fromDate = document.getElementById('resFromDate').value.replace(/-/g, '/');
+            data.toDate = document.getElementById('resToDate').value.replace(/-/g, '/');
+        }
 
         // پڕینت کردنی وەسڵ پێش خەزنکردن بۆ خێرایی
         document.getElementById('p-inv-no').innerText = "وەسڵی ژمارە: " + nextInvoiceNo;
@@ -219,6 +276,13 @@ async function handleAction() {
         document.getElementById('p-user').innerText = "کارمەند: " + currentUser;
         document.getElementById('p-date').innerText = dateStr;
         const pNote = document.getElementById('p-note-txt');
+        const pMonthly = document.getElementById('p-monthly-dates');
+        if(currentMode === 'monthly' && data.fromDate && data.toDate) {
+            pMonthly.innerText = "لە: " + data.fromDate + "  بۆ: " + data.toDate;
+            pMonthly.style.display = "block";
+        } else {
+            pMonthly.style.display = "none";
+        }
         if(data.note) { pNote.innerText = "تێبینی: " + data.note; pNote.style.display = "block"; } else { pNote.style.display = "none"; }
 
         window.print();
@@ -304,6 +368,16 @@ function resetUI(clearAll) {
         } else if (currentMode === 'fine') {
             document.getElementById('resNote').value = "غەرامە";
             document.getElementById('resLine').value = "";
+        } else if (currentMode === 'monthly') {
+            document.getElementById('resNote').value = "مانگانەی بۆ کراوە";
+            document.getElementById('resLineSelect').value = "";
+            document.getElementById('resTypeSelect').value = "";
+            // reset dates to today + 1 month
+            const today = new Date();
+            const nextMonth = new Date(today);
+            nextMonth.setMonth(nextMonth.getMonth() + 1);
+            document.getElementById('resFromDate').value = today.toLocaleDateString('en-CA');
+            document.getElementById('resToDate').value = nextMonth.toLocaleDateString('en-CA');
         }
     }
     document.getElementById('btnHalf').style.display = "none";

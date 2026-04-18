@@ -62,6 +62,9 @@
         <button id="fineModeBtn" class="btn-fine" onclick="toggleMode('fine')">
           ⚖️ غەرامە
         </button>
+        <button id="monthlyModeBtn" class="btn-monthly" onclick="toggleMode('monthly')">
+          📅 مانگانە
+        </button>
         <button
           style="background: var(--dark); color: white; padding: 8px 15px"
           onclick="openMyReport()"
@@ -93,7 +96,23 @@
       <div id="input-fields">
         <div style="display: flex; gap: 10px">
           <input type="text" id="resLine" placeholder="هێڵ" readonly />
+          <select id="resLineSelect" style="display:none;">
+            <option value="">هێڵ هەڵبژێرە...</option>
+            <option>بغداد</option>
+            <option>هەولێر</option>
+            <option>کرکوک</option>
+            <option>ڕانیە</option>
+            <option>کۆیە</option>
+            <option>چەمچەماڵ</option>
+            <option>قەڵادزێ</option>
+            <option>دووز</option>
+          </select>
           <input type="text" id="resType" placeholder="جۆر" readonly />
+          <select id="resTypeSelect" style="display:none;">
+            <option value="">جۆر هەڵبژێرە...</option>
+            <option>تەکسی</option>
+            <option>پاص</option>
+          </select>
         </div>
 
         <div style="display: flex; gap: 5px">
@@ -115,6 +134,17 @@
         </div>
 
         <input type="text" id="resNote" placeholder="تێبینی پسووڵەکانت.." />
+
+        <div id="monthly-dates" style="display:none; gap:10px;">
+          <div style="flex:1;">
+            <label style="font-size:13px; color:#555;">لە بەرواری</label>
+            <input type="date" id="resFromDate" style="margin-bottom:0;" />
+          </div>
+          <div style="flex:1;">
+            <label style="font-size:13px; color:#555;">بۆ بەرواری</label>
+            <input type="date" id="resToDate" style="margin-bottom:0;" />
+          </div>
+        </div>
       </div>
 
       <button class="btn-save" id="saveBtn" onclick="handleAction()">
@@ -183,6 +213,7 @@
       <h1 id="p-num" style="font-size: 30px; margin: 0px 0"></h1>
       <h1 id="p-line-type" style="font-size: 24px; margin: 0px 0"></h1>
       <h2 id="p-price"></h2>
+      <p id="p-monthly-dates" style="font-size: 18px; font-weight: bold; display: none; border: 1px dashed black; padding: 5px;"></p>
       <h3
         id="p-note-txt"
         style="border: 1px solid black; padding: 5px; display: none"
