@@ -428,7 +428,7 @@ document.addEventListener('click', function(e) {
 
 function toggleMode(mode) {
     if (mode === 'report') {
-        window.location.href = 'https://arduexcel.github.io/iin/';
+        window.location.href = 'https://arduexcel.github.io/data12/';
     }
     // لێرە کۆدەکانی تری فەنکشنەکە بنووسە ئەگەر پێویست بوو
 }
