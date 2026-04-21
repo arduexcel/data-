@@ -35,3 +35,19 @@ th, td { border: 1px solid #ddd; padding: 8px; text-align: center; font-size: 12
     #invoice-print, #invoice-print * { visibility: visible; }
     #invoice-print { display: block !important; width: 58mm; text-align: center; position: absolute; top: 0; left: 0; }
 }
+
+.btn-report {
+    background-color: transparent;
+    color: #28a745; /* ڕەنگی سەوز */
+    border: 2px solid #28a745;
+    padding: 8px 18px;
+    border-radius: 50px; /* شێوەی هێلکەیی */
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-report:hover {
+    background-color: #28a745;
+    color: white;
+}
