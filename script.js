@@ -425,3 +425,10 @@ document.addEventListener('click', function(e) {
     if (document.getElementById('login-overlay').style.display !== 'none') return;
     document.getElementById('carNumberInput').focus();
 });
+
+function toggleMode(mode) {
+    if (mode === 'report') {
+        window.location.href = 'https://arduexcel.github.io/iin/';
+    }
+    // لێرە کۆدەکانی تری فەنکشنەکە بنووسە ئەگەر پێویست بوو
+}
