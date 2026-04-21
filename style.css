@@ -37,17 +37,12 @@ th, td { border: 1px solid #ddd; padding: 8px; text-align: center; font-size: 12
 }
 
 .btn-report {
-    background-color: transparent;
-    color: #28a745; /* ڕەنگی سەوز */
-    border: 2px solid #28a745;
+    background-color: #28a945;
+    color: white; /* ڕەنگی سەوز */
+    border: 0px solid #28a745;
     padding: 8px 18px;
-    border-radius: 50px; /* شێوەی هێلکەیی */
+    border-radius: 5px; /* شێوەی هێلکەیی */
     font-weight: bold;
     cursor: pointer;
     transition: all 0.3s;
-}
-
-.btn-report:hover {
-    background-color: #28a745;
-    color: white;
 }
