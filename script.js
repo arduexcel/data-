@@ -142,6 +142,13 @@ function setCarData(match) {
 }
 
 function toggleMode(mode) {
+    if (mode === 'report') {
+        var modal = document.getElementById("myModal");
+        var iframe = document.getElementById("reportFrame");
+        iframe.src = "https://arduexcel.github.io/data12/?user=" + encodeURIComponent(currentUser);
+        modal.style.display = "block";
+        return;
+    }
     if(currentMode === mode) {
         currentMode = 'normal';
         document.getElementById('parkingModeBtn').classList.remove('mode-active');
@@ -425,19 +432,6 @@ document.addEventListener('click', function(e) {
     if (document.getElementById('login-overlay').style.display !== 'none') return;
     document.getElementById('carNumberInput').focus();
 });
-
-function toggleMode(mode) {
-    if (mode === 'report') {
-        var modal = document.getElementById("myModal");
-        var iframe = document.getElementById("reportFrame");
-        
-        // دانانی لینکی سایتەکە لەناو ئایفرەیمەکە
-        iframe.src = "https://arduexcel.github.io/data12/";
-        
-        // پیشاندانی مۆدێلەکە
-        modal.style.display = "block";
-    }
-}
 
 function closeModal() {
     document.getElementById("myModal").style.display = "none";
